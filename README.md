@@ -25,6 +25,82 @@ export API_KEYS=<paste key from step 1>
 go run ./cmd/server
 ```
 
+## Docker
+
+### Build the image
+
+```bash
+docker build -t mariadb-dal-api .
+```
+
+### Run the container
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -e DB_HOST=your-db-host \
+  -e DB_PORT=3306 \
+  -e DB_NAME=mydb \
+  -e DB_USER=root \
+  -e DB_PASSWORD=secret \
+  -e API_KEYS=your-api-key \
+  --name mariadb-dal-api \
+  mariadb-dal-api
+```
+
+Override the listen address or expose a different port:
+
+```bash
+docker run -d \
+  -p 9090:9090 \
+  -e LISTEN_ADDR=:9090 \
+  ... \
+  mariadb-dal-api
+```
+
+### Docker Compose example
+
+```yaml
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_DATABASE: mydb
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect"]
+      interval: 5s
+      retries: 10
+
+  api:
+    image: mariadb-dal-api
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: mydb
+      DB_USER: root
+      DB_PASSWORD: secret
+      API_KEYS: your-api-key
+    depends_on:
+      db:
+        condition: service_healthy
+```
+
+```bash
+docker compose up -d
+```
+
+### Show help
+
+```bash
+docker run --rm mariadb-dal-api --help
+```
+
+---
+
 ## Generating API keys
 
 The `keygen` helper creates cryptographically secure 32-byte hex keys.
